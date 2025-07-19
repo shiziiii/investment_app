@@ -634,65 +634,6 @@ def main():
         if timeline_chart:
             st.plotly_chart(timeline_chart, use_container_width=True)
     
-    # 扩展分析图表
-    st.subheader("📈 扩展分析")
-    
-    # 新闻数量和置信度分析
-    col3, col4 = st.columns(2)
-    
-    with col3:
-        # 新闻数量统计
-        volume_chart = visualizer.plot_news_volume(filtered_data)
-        if volume_chart:
-            st.plotly_chart(volume_chart, use_container_width=True)
-    
-    with col4:
-        # 置信度分布
-        confidence_chart = visualizer.plot_confidence_distribution(filtered_data)
-        if confidence_chart:
-            st.plotly_chart(confidence_chart, use_container_width=True)
-    
-    # 情感热力图和分值置信度关系
-    col5, col6 = st.columns(2)
-    
-    with col5:
-        # 情感热力图
-        heatmap_chart = visualizer.plot_sentiment_heatmap(filtered_data)
-        if heatmap_chart:
-            st.plotly_chart(heatmap_chart, use_container_width=True)
-    
-    with col6:
-        # 分值与置信度关系
-        score_confidence_chart = visualizer.plot_score_vs_confidence(filtered_data)
-        if score_confidence_chart:
-            st.plotly_chart(score_confidence_chart, use_container_width=True)
-    
-    # 关键词云图
-    st.subheader("☁️ 关键词分析")
-    
-    # 情感过滤选项
-    sentiment_filter = st.selectbox(
-        "选择情感类型",
-        options=[None, 'positive', 'negative', 'neutral'],
-        format_func=lambda x: {
-            None: "全部",
-            'positive': "积极",
-            'negative': "消极", 
-            'neutral': "中性"
-        }.get(x, x),
-        key="wordcloud_filter"
-    )
-    
-    # 生成词云图
-    try:
-        wordcloud_fig = visualizer.generate_wordcloud(filtered_data, sentiment_filter)
-        if wordcloud_fig:
-            st.pyplot(wordcloud_fig)
-        else:
-            st.info("没有足够的关键词数据生成词云图")
-    except Exception as e:
-        st.warning(f"词云图生成失败: {str(e)}")
-    
     st.markdown("---")
     
     # 投资建议模块

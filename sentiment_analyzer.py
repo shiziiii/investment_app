@@ -13,8 +13,8 @@ import re
 import sys
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
+from openai import OpenAI
 import logging
-from api import chat_completions4
 
 # 配置日志
 logging.basicConfig(
@@ -22,6 +22,21 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+API_SECRET_KEY = "sk-zk22fff00d0d5fe4cd7a64f0f5aaac6a014687a42c264dfb";
+BASE_URL = "https://api.zhizengzeng.com/v1/"
+
+# chat with other model
+def chat_completions4(query):
+    client = OpenAI(api_key=API_SECRET_KEY, base_url=BASE_URL)
+    resp = client.chat.completions.create(
+        model="hunyuan-lite",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": query}
+        ]
+    )
+    return resp.choices[0].message.content
 
 class SentimentAnalyzer:
     """新闻情感分析器"""

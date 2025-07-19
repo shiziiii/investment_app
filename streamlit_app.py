@@ -2,8 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import json
 import os
 from datetime import datetime, timedelta
 import sys
@@ -16,11 +14,9 @@ from data_visualizer import DataVisualizer
 # 添加项目路径
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from sentiment_analyzer import SentimentAnalyzer
 from investment_advisor import InvestmentAdvisor
 from utils import load_json_data, get_file_list
-from config import Config
-from gold_price_fetcher import GoldPriceFetcher, GoldPriceData
+from gold_price_fetcher import GoldPriceFetcher
 
 # 页面配置
 st.set_page_config(
@@ -155,6 +151,21 @@ def display_gold_price_section():
         current_price = fetcher.get_current_gold_price()
     
     if current_price:
+        # 检查价格提醒
+        if 'price_alert' in st.session_state and st.session_state['price_alert'].get('enabled', False):
+            alert_price = st.session_state['price_alert']['price']
+            current_usd_price = current_price.price_usd
+            
+            # 检查是否达到提醒价格（上涨或下跌都提醒）
+            if current_usd_price >= alert_price:
+                st.success(f"🔔 价格提醒：金价已达到目标价格！当前价格 ${current_usd_price:.2f} >= 目标价格 ${alert_price:.2f}")
+            elif current_usd_price <= alert_price * 0.95:  # 当价格低于目标价格5%时也提醒
+                st.warning(f"⚠️ 价格提醒：金价已低于目标价格的95%！当前价格 ${current_usd_price:.2f} < 目标价格 ${alert_price * 0.95:.2f}")
+        elif 'price_alert' in st.session_state and not st.session_state['price_alert'].get('enabled', False):
+            # 当提醒被禁用时，清除任何之前的提醒状态
+            if 'alert_shown' in st.session_state:
+                del st.session_state['alert_shown']
+        
         # 显示当前金价
         col1, col2, col3, col4 = st.columns(4)
         
@@ -172,7 +183,7 @@ def display_gold_price_section():
                 "人民币金价", 
                 f"¥{current_price.price_cny:.2f}",
                 f"{current_price.change_24h * 7.2:+.2f}",
-                help="每盎司黄金的人民币价格"
+                help="每克黄金的人民币价格"
             )
         
         with col3:
@@ -239,7 +250,7 @@ def create_gold_price_charts(historical_data, current_price):
         {
             'date': data.timestamp,
             'price_usd': data.price_usd,
-            'price_cny': data.price_cny,
+            'price_cny': data.price_cny / 31.1035,  # 转换为克单位
             'change_percent': data.change_percent_24h
         }
         for data in historical_data
@@ -308,7 +319,7 @@ def create_gold_price_charts(historical_data, current_price):
         fig_cny.update_layout(
             title="💴 人民币金价走势",
             xaxis_title="日期",
-            yaxis_title="价格 (CNY/盎司)",
+            yaxis_title="价格 (CNY/克)",
             height=400,
             showlegend=True,
             hovermode='x unified'
@@ -473,6 +484,12 @@ def main():
                 st.session_state['price_alert'] = {
                     'enabled': enable_alerts,
                     'price': alert_price
+                }
+            else:
+                # 当取消勾选时，确保禁用提醒
+                st.session_state['price_alert'] = {
+                    'enabled': False,
+                    'price': st.session_state.get('price_alert', {}).get('price', 2000.0)
                 }
     
     # 根据选择的功能显示不同内容

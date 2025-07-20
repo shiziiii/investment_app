@@ -144,7 +144,7 @@ class GoldPriceFetcher:
                             price_cny=round(current_price_cny_per_gram, 2),
                             change_24h=round(change_24h_usd, 2),
                             change_percent_24h=round(change_percent, 2),
-                            source="汇率表-国内金价(huilvbiao.com)"
+                            source="汇率表(huilvbiao.com)"
                         )
                     except (ValueError, IndexError) as e:
                         logger.warning(f"解析AUTD数据失败: {e}")

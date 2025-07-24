@@ -96,7 +96,7 @@ def display_news_analysis(data, limit=5):
     
     st.subheader(f"📰 最新 {limit} 条新闻分析")
     
-    for i, item in enumerate(data[:limit]):
+    for _, item in enumerate(data[:limit]):
         sentiment_analysis = item.get('sentiment_analysis', {})
         sentiment = sentiment_analysis.get('sentiment', 'neutral')
         score = sentiment_analysis.get('score', 0)
@@ -279,7 +279,7 @@ def create_gold_price_charts(historical_data, current_price):
                 y=current_price.price_usd,
                 line_dash="dash",
                 line_color="red",
-                annotation_text=f"当前价格: ${current_price.price_usd:.2f}"
+                annotation_text=f"当前价格: ${current_price.price_usd:.2f}/盎司"
             )
         
         fig_usd.update_layout(
@@ -309,11 +309,13 @@ def create_gold_price_charts(historical_data, current_price):
         
         # 添加当前价格线
         if current_price:
+            # 将当前价格从人民币/克转换为与历史数据相同的单位
+            current_price_per_gram = current_price.price_cny
             fig_cny.add_hline(
-                y=current_price.price_cny,
+                y=current_price_per_gram,
                 line_dash="dash",
                 line_color="red",
-                annotation_text=f"当前价格: ¥{current_price.price_cny:.2f}"
+                annotation_text=f"当前价格: ¥{current_price_per_gram:.2f}/克"
             )
         
         fig_cny.update_layout(
@@ -463,8 +465,8 @@ def main():
         if page_option == "💰 金价监控":
             # 金价监控设置
             st.subheader("⚙️ 金价设置")
-            st.info("💡 实时金价数据来源于多个API")
-            st.info("📊 历史数据基于模拟生成")
+            st.info("💡 金价数据来源于huilvbiao.com")
+            
             
             # 金价提醒设置
             st.write("价格提醒")

@@ -53,7 +53,7 @@ class GoldPriceFetcher:
         """获取当前实时金价"""
         try:
             # 尝试多个数据源
-            price_data = self._fetch_from_huilvbiao() or self._fetch_from_metals_api() or self._fetch_from_backup_source()
+            price_data = self._fetch_from_huilvbiao() or self._fetch_from_backup_source()
             
             if price_data:
                 # 缓存当前价格
@@ -67,49 +67,6 @@ class GoldPriceFetcher:
             logger.error(f"获取实时金价失败: {e}")
             return self._load_cached_price()
     
-    def _fetch_from_coinapi(self) -> Optional[GoldPriceData]:
-        """从金投网爬取金价数据"""
-        try:
-            # 爬取金投网的黄金价格页面
-            url = "https://quote.cngold.org/gjs/swhj_zghj.html"
-            response = self.session.get(url, timeout=10)
-            response.encoding = 'utf-8'
-            
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.text, 'html.parser')
-                
-                # 查找价格表格
-                price_table = soup.find('table', class_='quote_table')
-                if not price_table:
-                    price_table = soup.find('table', {'id': 'quote_table'})
-                
-                if price_table:
-                    rows = price_table.find_all('tr')
-                    for row in rows:
-                        cells = row.find_all('td')
-                        if len(cells) >= 4 and '上海黄金' in cells[0].get_text():
-                            # 提取价格信息
-                            current_price = float(cells[1].get_text().strip())
-                            change_text = cells[2].get_text().strip()
-                            change_24h = float(change_text) if change_text and change_text != '--' else 0
-                            
-                            change_percent_text = cells[3].get_text().strip().replace('%', '')
-                            change_percent = float(change_percent_text) if change_percent_text and change_percent_text != '--' else 0
-                            
-                            # 转换为美元价格 (假设当前价格是人民币/克)
-                            price_usd = (current_price * 31.1035) / 7.2  # 克转盎司，人民币转美元
-                            
-                            return GoldPriceData(
-                                timestamp=datetime.now(),
-                                price_usd=price_usd,
-                                price_cny=current_price * 31.1035,  # 转换为人民币/盎司
-                                change_24h=change_24h,
-                                change_percent_24h=change_percent,
-                                source="金投网(cngold.org)"
-                            )
-        except Exception as e:
-            logger.warning(f"从金投网获取数据失败: {e}")
-            return None
     
     def _fetch_from_huilvbiao(self) -> Optional[GoldPriceData]:
         """从汇率表网站获取实时金价数据"""
@@ -184,56 +141,6 @@ class GoldPriceFetcher:
             return None
         except Exception as e:
             logger.error(f"获取汇率表数据时发生未知错误: {e}")
-            return None
-    
-    def _fetch_from_metals_api(self) -> Optional[GoldPriceData]:
-        """从汇率表网站爬取金价数据"""
-        try:
-            # 爬取汇率表网站的黄金价格
-            url = "https://www.huilvbiao.com/gold/"
-            response = self.session.get(url, timeout=10)
-            response.encoding = 'utf-8'
-            
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.text, 'html.parser')
-                
-                # 查找金价数据
-                gold_price_div = soup.find('div', class_='gold-price')
-                if not gold_price_div:
-                    gold_price_div = soup.find('div', {'id': 'gold_price'})
-                
-                if gold_price_div:
-                    # 提取价格信息
-                    price_span = gold_price_div.find('span', class_='price')
-                    if price_span:
-                        price_text = price_span.get_text().strip()
-                        # 使用正则表达式提取数字
-                        price_match = re.search(r'([0-9]+\.?[0-9]*)', price_text)
-                        if price_match:
-                            current_price = float(price_match.group(1))
-                            
-                            # 查找变化信息
-                            change_span = gold_price_div.find('span', class_='change')
-                            change_24h = 0
-                            change_percent = 0
-                            
-                            if change_span:
-                                change_text = change_span.get_text().strip()
-                                change_match = re.search(r'([+-]?[0-9]+\.?[0-9]*)', change_text)
-                                if change_match:
-                                    change_24h = float(change_match.group(1))
-                                    change_percent = (change_24h / current_price) * 100 if current_price != 0 else 0
-                            
-                            return GoldPriceData(
-                                timestamp=datetime.now(),
-                                price_usd=current_price,
-                                price_cny=current_price * 7.2,
-                                change_24h=change_24h,
-                                change_percent_24h=change_percent,
-                                source="汇率表(huilvbiao.com)"
-                            )
-        except Exception as e:
-            logger.warning(f"从汇率表网站获取数据失败: {e}")
             return None
     
     def _fetch_from_backup_source(self) -> Optional[GoldPriceData]:
